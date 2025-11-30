@@ -11,6 +11,7 @@ dl_gh "revanced-patches-arsclib revanced-integrations revanced-cli-arsclib" "ino
 
 # Patch Reddit:
 get_patches_key "reddit-rve-arsclib"
+version="2025.46.0"
 get_apk "com.reddit.frontpage" "reddit" "reddit" "redditinc/reddit/reddit" "Bundle_extract"
 split_editor "reddit" "reddit"
 patch "reddit" "revanced-extended"
