@@ -17,7 +17,6 @@ NPatch_dl(){
 	NPatch_dl
 	dl_gh "NexAlloy" "gnadgnaoh" "v3.0"
 	# Patch Facebook:
-	version="564.0.0.48.74"
 	get_apk "com.facebook.katana" "facebook-arm64-v8a" "bundle" "arm64-v8a" " nodpi" "Android 11+"
 	npatch "facebook-arm64-v8a" "NexAlloy-nonroot-release*.apk" "gnadgnaoh" "--injectdex --sigbypasslv 3"
 }
