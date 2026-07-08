@@ -527,17 +527,31 @@ get_apk() {
 	echo "$base_url$final_href"
 	local cookie_args=()
 	[[ -n "$FS_COOKIES" ]] && cookie_args=(--header "Cookie: $FS_COOKIES")
-	wget -nv -O "./download/$base_apk" \
-		--header="User-Agent: $user_agent" \
-		--referer="$base_url$dl_btn_href" \
-		"${cookie_args[@]}" \
-		--timeout=120 \
-		"$base_url$final_href"
 
-	if [[ -f "./download/$base_apk" ]]; then
+	local dl_attempt dl_max_retries=3 dl_ok=0
+	for dl_attempt in $(seq 1 $dl_max_retries); do
+		wget -nv -O "./download/$base_apk" \
+			--header="User-Agent: $user_agent" \
+			--referer="$base_url$dl_btn_href" \
+			"${cookie_args[@]}" \
+			--timeout=120 \
+			"$base_url$final_href"
+		local wget_status=$?
+
+		if [[ $wget_status -eq 0 ]] && [[ -s "./download/$base_apk" ]]; then
+			dl_ok=1
+			break
+		fi
+
+		yellow_log "[!] Download attempt $dl_attempt/$dl_max_retries failed (wget exit=$wget_status, size=$(stat -c%s "./download/$base_apk" 2>/dev/null || echo 0))"
+		rm -f "./download/$base_apk"
+		[[ $dl_attempt -lt $dl_max_retries ]] && sleep 10
+	done
+
+	if [[ $dl_ok -eq 1 ]]; then
 		green_log "[+] Successfully downloaded $apk_name"
 	else
-		red_log "[-] Failed to download $apk_name"
+		red_log "[-] Failed to download $apk_name after $dl_max_retries attempts"
 		return 1
 	fi
 
@@ -546,7 +560,15 @@ get_apk() {
 			unzip "./download/$base_apk" -d "./download/$(basename "$base_apk" .apkm)" > /dev/null 2>&1
 		else
 			green_log "[+] Merge splits apk to standalone apk"
-			java -jar $APKEditor m -i "./download/$apk_name.apkm" -o "./download/$apk_name.apk" > /dev/null 2>&1
+			if ! java -jar $APKEditor m -i "./download/$apk_name.apkm" -o "./download/$apk_name.apk" 2>/tmp/apkeditor_err.log; then
+				red_log "[-] APKEditor merge failed for $apk_name:"
+				cat /tmp/apkeditor_err.log >&2
+				return 1
+			fi
+			if [[ ! -s "./download/$apk_name.apk" ]]; then
+				red_log "[-] APKEditor produced no output for $apk_name"
+				return 1
+			fi
 		fi
 	fi
 }
