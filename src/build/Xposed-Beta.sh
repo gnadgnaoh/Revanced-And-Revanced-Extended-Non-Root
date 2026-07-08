@@ -21,20 +21,20 @@ patch_dl(){
 	patch_dl
 	# Patch Facebook:
 	get_apk "com.facebook.katana" "facebook-beta-arm64-v8a" "bundle" "arm64-v8a" " nodpi" "Android 11+"
-	npatch "facebook-beta-arm64-v8a" "NexAlloy-nonroot-release*.apk" "gnadgnaoh" " --sigbypasslv 2"
+	npatch "facebook-beta-arm64-v8a" "NexAlloy-nonroot-release*.apk" "gnadgnaoh" ""
 	# Patch Messenger:
 	get_apk "com.facebook.orca" "messenger-beta-arm64-v8a" "apk" "arm64-v8a" "nodpi" "Android 9.0+"
-	npatch "messenger-beta-arm64-v8a" "NexAlloy-nonroot-release*.apk" "gnadgnaoh" " --sigbypasslv 2"
+	npatch "messenger-beta-arm64-v8a" "NexAlloy-nonroot-release*.apk" "gnadgnaoh" ""
 }
 3() {
 	NPatch_dl
 	patch_dl
 	# Patch Instagram:
 	get_apk "com.instagram.android" "instagram-beta-arm64-v8a" "bundle" "arm64-v8a" "120-640dpi"  "Android 9.0+"
-	npatch "instagram-beta-arm64-v8a" "NexAlloy-nonroot-release*.apk" "gnadgnaoh" " --sigbypasslv 2"
+	npatch "instagram-beta-arm64-v8a" "NexAlloy-nonroot-release*.apk" "gnadgnaoh" ""
 	# Patch Thread:
 	get_apk "com.instagram.barcelona" "threads-beta-arm64-v8a" "bundle" "arm64-v8a" "320-480dpi" "Android 9.0+"
-	npatch "threads-beta-arm64-v8a" "NexAlloy-nonroot-release*.apk" "gnadgnaoh" " --sigbypasslv 2"
+	npatch "threads-beta-arm64-v8a" "NexAlloy-nonroot-release*.apk" "gnadgnaoh" ""
 }
 case "$1" in
     1)
