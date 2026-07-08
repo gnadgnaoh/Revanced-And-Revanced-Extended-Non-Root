@@ -737,18 +737,47 @@ telegram_dl() {
 		chmod +x ./tdl
 	fi
 
+	if [[ -z "$TDL_BACKUP" ]]; then
+		red_log "[-] TDL_BACKUP secret is empty/unset"
+		return 1
+	fi
+
 	echo "$TDL_BACKUP" | base64 -d > ./backup.tdl
-	./tdl recover --file ./backup.tdl > /dev/null 2>&1
+	if [[ ! -s "./backup.tdl" ]]; then
+		red_log "[-] TDL_BACKUP did not decode to a valid backup file (check base64 encoding of the secret)"
+		rm -f ./backup.tdl
+		return 1
+	fi
+
+	local recover_log
+	recover_log=$(./tdl recover --file ./backup.tdl 2>&1)
+	local recover_status=$?
 	rm -f ./backup.tdl
+	if [[ $recover_status -ne 0 ]]; then
+		red_log "[-] tdl recover failed (session may be logged out / TDL_BACKUP expired):"
+		echo "$recover_log" >&2
+		return 1
+	fi
 
 	local ext="${file_pattern##*.}"
 	local filter="Media.Name endsWith '.$ext'"
 
 	green_log "[+] Downloading from Telegram chat $chat_id last $num_posts posts matching '$file_pattern'"
 
-	./tdl chat export -c "$chat_id" -T last -i "$num_posts" -f "$filter" -o ./tg_export.json > /dev/null 2>&1
-	if [[ ! -f "./tg_export.json" ]]; then
-		red_log "[-] Failed to export messages from Telegram"
+	local export_log
+	export_log=$(./tdl chat export -c "$chat_id" -T last -i "$num_posts" -f "$filter" -o ./tg_export.json 2>&1)
+	local export_status=$?
+	if [[ $export_status -ne 0 ]] || [[ ! -f "./tg_export.json" ]]; then
+		red_log "[-] Failed to export messages from Telegram (chat_id=$chat_id):"
+		echo "$export_log" >&2
+		return 1
+	fi
+
+	local msg_count
+	msg_count=$(jq '.messages | length' ./tg_export.json 2>/dev/null || echo 0)
+	if [[ "$msg_count" -eq 0 ]]; then
+		red_log "[-] No messages matching '$file_pattern' found in last $num_posts posts of $chat_id"
+		rm -f ./tg_export.json
 		return 1
 	fi
 
@@ -854,7 +883,15 @@ npatch() {
 			red_log "[-] Module not found: $2"
 			return 1
 		fi
+		if ! compgen -G "jar*.jar" > /dev/null; then
+			red_log "[-] NPatch jar (jar*.jar) not found - NPatch_dl/telegram_dl must have failed earlier"
+			return 1
+		fi
 		java -jar jar*.jar ./download/$1.apk -k ./src/fiorenmas.ks "fiorenmas" "morphe" "fiorenmas" $4 -m "$module" -o ./release/
+		if ! compgen -G "./release/$1-*-npatched.apk" > /dev/null; then
+			red_log "[-] npatch did not produce an output apk for $1"
+			return 1
+		fi
 		mv ./release/$1-*-npatched.apk ./release/$1-$3-npatched.apk
 		unset version
 		unset lock_version
